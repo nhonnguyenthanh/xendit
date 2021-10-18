@@ -4,20 +4,17 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.github.bonigarcia.wdm.WebDriverManager;
-import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
-import ru.yandex.qatools.ashot.AShot;
-import ru.yandex.qatools.ashot.Screenshot;
-import ru.yandex.qatools.ashot.comparison.ImageDiff;
-import ru.yandex.qatools.ashot.comparison.ImageDiffer;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.io.File;
-import java.io.IOException;
+import java.time.Duration;
 
 public class MyStepDefs {
 
@@ -30,17 +27,13 @@ public class MyStepDefs {
     }
 
     @Then("I should be able to see {}")
-    public void iShouldBeAbleToSee(String expected) throws IOException {
+    public void iShouldBeAbleToSee(String expected) {
         webDriver.switchTo().frame("fullframe");
         WebElement element = webDriver.findElement(By.id("canvas"));
-        File f = element.getScreenshotAs(OutputType.FILE);
-//        Screenshot image = new AShot().takeScreenshot(webDriver, element);
-        BufferedImage actualImage = ImageIO.read(f);
-        FileUtils.copyFile(f, new File("src/test/resources/expected_" + expected + ".png"));
-        BufferedImage expectedImage = ImageIO.read(new File("src/test/resources/" + getExpectedImages(expected)));
-        ImageDiffer imgDiff = new ImageDiffer();
-        ImageDiff diff = imgDiff.makeDiff(actualImage, actualImage);
-        Assert.assertTrue(diff.hasDiff());
+        File actualImage = element.getScreenshotAs(OutputType.FILE);
+        new WebDriverWait(webDriver, Duration.ofSeconds(30)).until(driver -> actualImage.exists());
+        File expectedImage = new File("src/test/resources/" + getExpectedImages(expected));
+        Assert.assertTrue(compareImage(actualImage,expectedImage));
         webDriver.quit();
     }
 
@@ -76,9 +69,37 @@ public class MyStepDefs {
     private String getExpectedImages(String expected) {
         switch (expected) {
             case "1": return "expected_1.png";
-            case "2": return "expected_2.png";
+            case "4": return "expected_4.png";
             case "0": return "expected_0.png";
             default: return "";
+        }
+    }
+
+    private static boolean compareImage(File fileA, File fileB) {
+        try {
+            // take buffer data from botm image files //
+            BufferedImage biA = ImageIO.read(fileA);
+            DataBuffer dbA = biA.getData().getDataBuffer();
+            int sizeA = dbA.getSize();
+            BufferedImage biB = ImageIO.read(fileB);
+            DataBuffer dbB = biB.getData().getDataBuffer();
+            int sizeB = dbB.getSize();
+            // compare data-buffer objects //
+            if(sizeA == sizeB) {
+                for(int i=0; i<sizeA; i++) {
+                    if(dbA.getElem(i) != dbB.getElem(i)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        catch (Exception e) {
+            System.out.println("Failed to compare image files ...");
+            return  false;
         }
     }
 }

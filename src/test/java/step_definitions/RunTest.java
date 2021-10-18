@@ -6,7 +6,7 @@ import org.testng.annotations.DataProvider;
 
 @CucumberOptions(
         features = "src/test/java/features/calculator.feature",
-        glue= {"com.sandata.sam.step_definitions"},
+        glue= {"src/test/java/step_definitions"},
         plugin = { "pretty", "html:target/cucumber/cucumber.html", "json:target/cucumber/cucumber.json"},
         monochrome = true)
 public class RunTest extends AbstractTestNGCucumberTests {
